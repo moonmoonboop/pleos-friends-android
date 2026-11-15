@@ -47,14 +47,17 @@ object JourneyEngine {
     fun arrivalClock(state: TravelState, carId: String = state.viewerId) = clock(state.departureMinute + state.members.first { it.id == carId }.baseMinutes +
         state.changes.filter { it.scope == RouteScope.GROUP || it.ownerId == carId }.sumOf { it.addedMinutes })
     fun commit(state: TravelState, change: RouteChange, voice: String = "", notify: Boolean = true): TravelState {
-        if (state.changes.any { it.id == change.id }) return state
         require(change.place.name.isNotBlank() && state.members.any { it.id == change.ownerId })
-        val sender = state.members.first { it.id == change.ownerId }
-        val recipients = state.members.filter { it.id != change.ownerId }.map { it.id }
+        val applied = if (state.changes.any { it.id == change.id }) state else state.copy(changes = state.changes + change)
+        if (!notify) return applied
+        val sender = applied.members.first { it.id == change.ownerId }
+        val recipients = applied.members.filter { it.id != change.ownerId }.map { it.id }
+        val already = applied.notes.any { it.from == change.ownerId && it.text.contains(change.place.name) }
+        if (already) return applied
         val note = TravelNote(from = change.ownerId, recipients = recipients,
             title = if (change.scope == RouteScope.GROUP) "${sender.name}이 ${change.place.name} 일정 추가를 신청합니다" else "${sender.name}이 잠깐 들렀다 갈게요",
             text = if (change.scope == RouteScope.GROUP) "모든 차량의 경로에 ${change.place.name}이 추가됐어요." else "${sender.name}의 차량에만 경유지가 추가됐어요. 다른 차량의 경로는 유지돼요.", voice = voice)
-        return state.copy(changes = state.changes + change, notes = if (notify) state.notes + note else state.notes, panel = Panel.NONE)
+        return applied.copy(notes = applied.notes + note)
     }
     fun reply(state: TravelState, voice: String): TravelState {
         val sender = viewer(state)

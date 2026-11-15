@@ -38,10 +38,7 @@ class TravelDesignReviewTest {
         try {
             scenario.onActivity { activity ->
                 original=activity.snapshotForRecording()
-                val plans=listOf(
-                    DayPlan(listOf(Place("휴게소"),Place("휴게소"),Place("부산 맛집"))),
-                    DayPlan(listOf(Place("00체험"),Place("00맛집"),Place("미정"))),
-                    DayPlan(listOf(Place("00체험"),Place("미정"),Place("00카페"))))
+                val plans=listOf(DayPlan(listOf(Place("점심"))),DayPlan(),DayPlan())
                 activity.presentDesignReview(TravelState(screen=Screen.SETUP,destination="부산 호텔",nights=2,days=plans,
                     groupName="여자들우정영원히",invited=3,joined=3))
             }

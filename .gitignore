@@ -3,5 +3,6 @@ recordings/
 releases/
 outputs/pleos-android/
 *.apk
+!apk/*.apk
 *.log
 validation/

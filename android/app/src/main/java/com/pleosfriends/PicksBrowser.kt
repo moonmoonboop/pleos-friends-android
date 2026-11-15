@@ -26,13 +26,15 @@ import androidx.compose.ui.unit.dp
 
 data class PicksFilter(val category: String = "전체", val source: String = "네이버", val sort: String = "플픽 추천순", val basis: String = "실시간", val collection: String = "")
 data class PickPlace(val id: String, val place: Place, val category: String, val summary: String, val hours: String,
-    val rating: Double, val distance: Int, val image: Int, val visits: Int = 10, val likes: Int = 8)
+    val rating: Double, val distance: Int, val image: Int, val visits: Int = 128, val likes: Int = 30,
+    val goneTag: String = "1.3만", val likeTag: String = "3,481")
 
 internal object PickCatalog {
     fun list(state: TravelState): List<PickPlace> {
         val busan = JourneyEngine.region(state).startsWith("부산") && (state.picks.basis == "도착지" || state.story == null || state.completedStops.isNotEmpty())
         if (busan) return listOf(
-            PickPlace("waveon", state.story?.cafe ?: Place("웨이브온커피", "부산광역시 기장군 장안읍 해맞이로 286", 35.3294,129.2834), "카페", "바다를 바라보며 함께 쉬어가는 대형 카페", "10:00–24:00", 4.8, 850, R.drawable.pick_ocean),
+            PickPlace("waveon", state.story?.cafe ?: Place("해운대 오션카페", "부산광역시 해운대구 달맞이길 21", 35.1588,129.1756), "카페",
+                "식물 사이에서 커피 한 잔. 잠깐 들렀다 가기 좋아요.", "10:00–21:00", 4.6, 1700, R.drawable.pick_ocean, 128, 30, "1.3만", "3,481"),
             PickPlace("busan-food", Place("부산 바다식탁 · 시연", "부산광역시 해운대구 달맞이길 30 · 시연 장소",35.162,129.18), "식당", "여섯 명이 둘러앉아 즐기는 부산의 한 끼", "11:00–21:00 · 시연",4.6,1200,R.drawable.pick_food),
             PickPlace("busan-park", Place("해운대 해변", "부산광역시 해운대구 해운대해변로",35.158,129.16), "여행/명소", "부산 도착 기념, 함께 남기는 한 장", "상시 개방 · 시연",4.7,1600,R.drawable.pick_ocean),
             PickPlace("busan-cafe", Place("해운대 포레스트 카페 · 시연", "부산광역시 해운대구 중동 · 시연 장소",35.17,129.18),"카페","넓은 테이블에서 쉬어가는 오후","09:00–22:00 · 시연",4.4,650,R.drawable.home_picks))
@@ -73,9 +75,9 @@ internal object PickCatalog {
             TextButton({ detail = null }) { Label("‹ 목록으로", 24, FontWeight.Bold, Purple) }
             Image(painterResource(p.image), null, Modifier.fillMaxWidth().height(240.dp).clip(RoundedCornerShape(25.dp)), contentScale = ContentScale.Crop)
             Label(p.place.name, 34, FontWeight.Bold); Label(p.summary, 24, color = Muted)
-            Label("위치  ${p.place.address}", 23); Label("영업시간  ${p.hours}", 23)
-            Label("★ ${p.rating}  ·  ${filter.source} 기준 시연 별점", 24, FontWeight.Bold, Purple)
-            Label("현대차 이용자 ${p.visits}명 방문 · ${p.likes}명 추천", 22, color = Muted)
+            Label("위치  ${p.place.address}", 23, maxLines = 1); Label("영업시간  ${p.hours}", 23, maxLines = 1)
+            Label("★ ${p.rating}  ·  ${filter.source} 지도", 24, FontWeight.Bold, Purple, maxLines = 1)
+            HyundaiOwnerPill(p.visits, p.likes)
             if (add != null) Action("일정 추가", { add(p.place) }, Modifier.fillMaxWidth().testTag("detail-add"))
             Label("사진·방문·추천·별점·거리 데이터는 시연용입니다.", 17, color = Muted)
         }
@@ -101,7 +103,9 @@ internal object PickCatalog {
             Label("장소 찾기", 28, FontWeight.Bold, modifier = Modifier.padding(bottom = 13.dp))
             if (compact) {
                 Row(Modifier.fillMaxWidth().background(Color(0xFFE8E9EF), RoundedCornerShape(18.dp)).padding(5.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("실시간", "도착지").forEach { basis -> SelectChip("${basis} 기반", filter.basis == basis, Modifier.weight(1f).testTag("basis-$basis")) { update(filter.copy(basis = basis)) } }
+                    listOf("실시간" to "현재 위치", "도착지" to "도착지").forEach { (basis, label) ->
+                        SelectChip(label, filter.basis == basis, Modifier.weight(1f).testTag("basis-$basis")) { update(filter.copy(basis = basis)) }
+                    }
                 }
                 Label(if (filter.basis == "실시간") "내 차량 주변" else "${state.destination.ifBlank { JourneyEngine.region(state) }} 주변", 18, color = Muted, modifier = Modifier.padding(vertical = 12.dp))
             }
@@ -124,41 +128,52 @@ internal object PickCatalog {
 }
 
 @Composable private fun PickRow(p: PickPlace, state: TravelState, compact: Boolean, detail: () -> Unit, bookmark: () -> Unit, add: (() -> Unit)?) {
-    Column(Modifier.fillMaxWidth().shadow(2.dp,RoundedCornerShape(24.dp)).clip(RoundedCornerShape(24.dp)).background(Color.White).padding(if (compact) 18.dp else 24.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(if (compact) 17.dp else 26.dp), modifier = Modifier.fillMaxWidth()) {
-            Box(Modifier.width(if (compact) 170.dp else 330.dp).height(if (compact) 185.dp else 215.dp).clip(RoundedCornerShape(20.dp)).clickable(onClick = detail)) {
-                Image(painterResource(p.image), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                Row(Modifier.align(Alignment.TopStart).padding(9.dp), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    MetricBadge("🐻 ${p.visits}", "현대차 이용자 ${p.visits}명 방문")
-                    MetricBadge("👍 ${p.likes}", "현대차 이용자 ${p.likes}명 추천")
-                }
-                if (compact) Label("근처 ${p.distance + if (state.picks.basis == "도착지") 700 else 0}m", 17, FontWeight.Bold, Color.White,
-                    Modifier.align(Alignment.BottomStart).padding(9.dp).background(Color(0xFFE07827), RoundedCornerShape(12.dp)).padding(8.dp))
-                IconButton(bookmark, Modifier.align(Alignment.BottomEnd).padding(6.dp).size(45.dp).background(Color.White.copy(.95f), CircleShape).testTag("bookmark-${p.id}")) {
-                    Icon(if (p.id in state.bookmarks) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder, "북마크", tint = Purple, modifier = Modifier.size(24.dp))
-                }
+    val meters = p.distance + if (state.picks.basis == "도착지") 700 else 0
+    val nearby = if (meters >= 1000) "근처 ${String.format(java.util.Locale.US, "%.1f", meters / 1000f)}km" else "근처 ${meters}m"
+    Row(Modifier.fillMaxWidth().shadow(2.dp,RoundedCornerShape(24.dp)).clip(RoundedCornerShape(24.dp)).background(Color.White)
+        .padding(if (compact) 14.dp else 20.dp), horizontalArrangement = Arrangement.spacedBy(if (compact) 14.dp else 20.dp)) {
+        Box(Modifier.width(if (compact) 148.dp else 220.dp).height(if (compact) 168.dp else 210.dp).clip(RoundedCornerShape(18.dp)).clickable(onClick = detail)) {
+            Image(painterResource(p.image), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            Column(Modifier.align(Alignment.TopStart).padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                PhotoTag("#다녀간 ${p.goneTag}"); PhotoTag("#좋아요 ${p.likeTag}")
             }
-            Column(Modifier.weight(1f).clickable(onClick = detail)) {
-                Label(p.place.name, if (compact) 25 else 30, FontWeight.Bold, maxLines = 2)
-                Label(p.summary, if (compact) 19 else 24, color = Muted, modifier = Modifier.padding(top = 7.dp), maxLines = 2)
-                Label("위치: ${p.place.address}", if (compact) 18 else 22, color = Muted, modifier = Modifier.padding(top = 12.dp), maxLines = 2)
-                Label("영업시간: ${p.hours}", if (compact) 18 else 22, color = Muted)
-                if (compact) Label("★ ${p.rating} · ${state.picks.source}", 21, FontWeight.Bold, Purple, Modifier.padding(top = 8.dp))
+            IconButton(bookmark, Modifier.align(Alignment.TopEnd).padding(4.dp).size(36.dp).background(Color.White.copy(.92f), CircleShape).testTag("bookmark-${p.id}")) {
+                Icon(if (p.id in state.bookmarks) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder, "북마크", tint = Purple, modifier = Modifier.size(18.dp))
             }
-            if (!compact) Column(horizontalAlignment = Alignment.End) { Label("★ ${p.rating}", 28, FontWeight.Bold, Purple); Label(state.picks.source, 18, color = Muted) }
+            Label(nearby, 14, FontWeight.Bold, Color.White,
+                Modifier.align(Alignment.BottomStart).padding(8.dp).background(Color(0xFFE07827), RoundedCornerShape(10.dp)).padding(horizontal = 8.dp, vertical = 4.dp), maxLines = 1)
         }
-        if (add != null) Action("일정 추가", add, Modifier.align(Alignment.End).padding(top = 12.dp).testTag("pick-add-${p.id}"), secondary = true)
+        Column(Modifier.weight(1f)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                Label(p.place.name, if (compact) 22 else 28, FontWeight.Bold, modifier = Modifier.weight(1f).clickable(onClick = detail), maxLines = 1)
+                if (add != null) Surface(onClick = add, shape = RoundedCornerShape(16.dp), color = Purple, modifier = Modifier.testTag("pick-add-${p.id}")) {
+                    Label("일정 추가", 16, FontWeight.Bold, Color.White, Modifier.padding(horizontal = 12.dp, vertical = 7.dp), maxLines = 1)
+                }
+            }
+            Label(p.summary, if (compact) 16 else 20, color = Muted, modifier = Modifier.padding(top = 6.dp).clickable(onClick = detail), maxLines = 2)
+            HyundaiOwnerPill(p.visits, p.likes, Modifier.padding(top = 10.dp))
+            Label(p.place.address, if (compact) 15 else 18, color = Muted, modifier = Modifier.padding(top = 8.dp), maxLines = 1)
+            Label(p.hours, if (compact) 15 else 18, color = Muted, maxLines = 1)
+            Label("${p.rating} · ${state.picks.source} 지도", if (compact) 15 else 18, color = Muted, maxLines = 1)
+        }
     }
 }
-@Composable private fun MetricBadge(text: String, description: String) {
-    Row(Modifier.background(Color.White.copy(.96f), RoundedCornerShape(18.dp)).padding(horizontal = 7.dp, vertical = 4.dp).semantics { contentDescription = description }, verticalAlignment = Alignment.CenterVertically) {
-        Canvas(Modifier.size(18.dp, 13.dp)) {
-            drawOval(Color(0xFF003478), style = androidx.compose.ui.graphics.drawscope.Stroke(1.3.dp.toPx()))
-            drawLine(Color(0xFF003478), Offset(size.width * .38f,size.height * .25f),Offset(size.width * .27f,size.height * .8f),2.dp.toPx())
-            drawLine(Color(0xFF003478), Offset(size.width * .7f,size.height * .2f),Offset(size.width * .6f,size.height * .75f),2.dp.toPx())
-            drawLine(Color(0xFF003478),Offset(size.width * .33f,size.height * .5f),Offset(size.width * .65f,size.height * .5f),2.dp.toPx())
+@Composable private fun PhotoTag(text: String) {
+    Label(text, 12, FontWeight.Bold, Color.White, Modifier.background(Color.Black.copy(.45f), RoundedCornerShape(8.dp)).padding(horizontal = 7.dp, vertical = 3.dp), maxLines = 1)
+}
+@Composable private fun HyundaiOwnerPill(visits: Int, likes: Int, modifier: Modifier = Modifier) {
+    Row(modifier.background(Color(0xFF003478), RoundedCornerShape(20.dp)).padding(horizontal = 10.dp, vertical = 5.dp)
+        .semantics { contentDescription = "현대차 이용자 ${visits}명 방문 · ${likes}명 추천" },
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Canvas(Modifier.size(16.dp, 11.dp)) {
+            drawOval(Color.White, style = androidx.compose.ui.graphics.drawscope.Stroke(1.2.dp.toPx()))
+            drawLine(Color.White, Offset(size.width * .38f,size.height * .25f),Offset(size.width * .27f,size.height * .8f),1.8.dp.toPx())
+            drawLine(Color.White, Offset(size.width * .7f,size.height * .2f),Offset(size.width * .6f,size.height * .75f),1.8.dp.toPx())
+            drawLine(Color.White,Offset(size.width * .33f,size.height * .5f),Offset(size.width * .65f,size.height * .5f),1.8.dp.toPx())
         }
-        Label(text, 14, FontWeight.Bold, modifier = Modifier.padding(start = 4.dp))
+        Label("$visits", 14, FontWeight.Bold, Color.White, maxLines = 1)
+        Icon(Icons.Rounded.ThumbUp, null, Modifier.size(12.dp), tint = Color.White)
+        Label("$likes", 14, FontWeight.Bold, Color.White, maxLines = 1)
     }
 }
 @Composable internal fun SelectChip(label: String, selected: Boolean, modifier: Modifier = Modifier, click: () -> Unit) {

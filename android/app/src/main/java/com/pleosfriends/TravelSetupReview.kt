@@ -78,7 +78,7 @@ private val Track = Color(0xFF7F828A)
     val last=index==state.days.lastIndex && state.days.size>1
     val start=if(index==0) "출발" else state.destination.ifBlank { "숙소" }
     val end=if(last) "내 집" else state.destination.ifBlank { "도착" }
-    val labels=listOf(start)+day.stops.map { it.name.replace(" · ","\n") }+end
+    val labels=listOf(start)+day.stops.map { it.name }+end
     BoxWithConstraints(Modifier.fillMaxWidth().height(140.dp).background(TimelineFill,RoundedCornerShape(20.dp))) {
         val edge=110.dp
         val step=(maxWidth-edge*2)/(labels.size-1)
@@ -93,8 +93,8 @@ private val Track = Color(0xFF7F828A)
         }
         labels.forEachIndexed { i,label ->
             Box(Modifier.offset(x=edge+step*i-118.dp,y=66.dp).width(236.dp),contentAlignment=Alignment.TopCenter) {
-                Text(label,color=if(i>0 && i<labels.lastIndex) Purple else Ink,fontFamily=TravelReviewFont,fontWeight=FontWeight.Bold,fontSize=23.sp,
-                    lineHeight=29.sp,textAlign=TextAlign.Center,maxLines=2,overflow=TextOverflow.Ellipsis)
+                Text(label,color=if(i>0 && i<labels.lastIndex) Purple else Ink,fontFamily=TravelReviewFont,fontWeight=FontWeight.Bold,fontSize=22.sp,
+                    lineHeight=26.sp,textAlign=TextAlign.Center,maxLines=1,overflow=TextOverflow.Ellipsis)
             }
         }
     }

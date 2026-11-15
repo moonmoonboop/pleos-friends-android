@@ -10,8 +10,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import java.util.concurrent.Executors
 
-/** One low-frequency AAOS policy subscription per process, with no Activity reference.
- * It survives window recreation; process death releases its Binder listener automatically.
+/** Parked vs moving uses AAOS CarUxRestrictions (Google GEAR_SELECTION / distraction optimization).
+ * Pleos Vehicle 2.3.2's Gear API is @Deprecated toward that Google property, so it is not used here.
+ * One low-frequency subscription per process, with no Activity reference.
  * Pleos 2.1's explicit unregister can deadlock during Activity destruction, so an Activity
  * must neither own nor synchronously unregister this application-scoped connection.
  */

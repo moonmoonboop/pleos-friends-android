@@ -10,8 +10,8 @@ android {
   applicationId = "com.pleosfriends"
   minSdk = 28
   targetSdk = 35
-  versionCode = 3
-  versionName = "0.3.0"
+  versionCode = 5
+  versionName = "0.5.0"
   testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
  }
  flavorDimensions += "environment"
@@ -38,6 +38,27 @@ android {
  kotlinOptions { jvmTarget = "17" }
  packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
  testOptions { unitTests.isReturnDefaultValues = true }
+ signingConfigs {
+  create("contest") {
+   val file = rootProject.file("keystore/keystore.properties")
+   require(file.exists()) { "Missing android/keystore/keystore.properties for contest release signing." }
+   val props = file.readLines().mapNotNull { line ->
+    val text = line.trim()
+    if (text.isEmpty() || text.startsWith("#")) null
+    else text.split("=", limit = 2).takeIf { it.size == 2 }?.let { it[0] to it[1] }
+   }.toMap()
+   storeFile = rootProject.file("keystore/${props.getValue("storeFile")}")
+   storePassword = props.getValue("storePassword")
+   keyAlias = props.getValue("keyAlias")
+   keyPassword = props.getValue("keyPassword")
+  }
+ }
+ buildTypes {
+  getByName("release") {
+   signingConfig = signingConfigs.getByName("contest")
+   isMinifyEnabled = false
+  }
+ }
 }
 dependencies {
  implementation("androidx.activity:activity-compose:1.10.1")
@@ -53,6 +74,7 @@ dependencies {
  implementation("ai.pleos.playground:FusedLocation:1.1.3")
  implementation("ai.pleos.playground:SpeechToText:3.3.1")
  implementation("ai.pleos.playground:TextToSpeech:3.3.1")
+ implementation("ai.pleos.playground:Vehicle:2.3.2")
  testImplementation("junit:junit:4.13.2")
  androidTestImplementation("androidx.test.ext:junit:1.3.0")
  androidTestImplementation("androidx.test:runner:1.7.0")

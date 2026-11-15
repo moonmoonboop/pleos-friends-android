@@ -51,9 +51,9 @@ import kotlinx.coroutines.delay
 
 internal val Purple = Color(0xFF5A46FA)
 internal val Ink = Color(0xFF131417)
-internal val Muted = Color(0xFF70737C)
+internal val Muted = Color(0xFF686A72)
 internal val Paper = Color(0xFFF7F8FA)
-internal val Line = Color(0xFFE4E5EB)
+internal val Line = Color(0xFFE0E1E6)
 internal val CarColors = listOf(Color(0xFFF0C000), Color(0xFFE53935), Color(0xFF3B82F6), Color(0xFF7C5CFF))
 private val Asta = TravelReviewFont
 
@@ -115,12 +115,20 @@ internal data class InputRequest(val title: String, val value: String, val sampl
     }
     BackHandler(state.screen != Screen.HOME || input != null) { back() }
     val reviewing = state.screen == Screen.SETUP || state.screen == Screen.FRIENDS
-    BoxWithConstraints(Modifier.fillMaxSize().background(if (reviewing) Color.White else Paper)) {
+    BoxWithConstraints(Modifier.fillMaxSize().background(Paper)) {
         val original = LocalDensity.current
         val scale = minOf(maxWidth.value / 1450f, maxHeight.value / 1080f).coerceIn(.5f, 1.4f)
         CompositionLocalProvider(LocalDensity provides Density(original.density * scale, 1f), LocalTravelSetupReview provides reviewing) {
             val unsafe = state.screen in listOf(Screen.SETUP, Screen.FRIENDS, Screen.CONFIRM, Screen.SUMMARY, Screen.PICKS, Screen.HISTORY)
-            Box(Modifier.fillMaxSize().padding(28.dp).clip(RoundedCornerShape(36.dp)).background(if (reviewing) TravelReviewCanvas else Paper)) {
+            Column(Modifier.fillMaxSize()) {
+            if (BuildConfig.DEMO_MODE) DemoViewerBar(state) { id ->
+                store.update {
+                    it.copy(viewerId = id, panel = if (it.started) Panel.NOTIFICATIONS else it.panel)
+                }
+            }
+            Box(Modifier.weight(1f).fillMaxWidth().padding(start = if (BuildConfig.DEMO_MODE) 16.dp else 28.dp,
+                top = if (BuildConfig.DEMO_MODE) 12.dp else 28.dp, end = if (BuildConfig.DEMO_MODE) 16.dp else 28.dp, bottom = 8.dp)
+                .clip(RoundedCornerShape(36.dp)).background(if (reviewing) TravelReviewCanvas else Paper)) {
                 if (unsafe && (services.restricted || !services.policyKnown)) {
                     Column(Modifier.align(Alignment.Center).padding(64.dp), horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(26.dp)) {
@@ -144,10 +152,6 @@ internal data class InputRequest(val title: String, val value: String, val sampl
                     Screen.PICKS -> StandalonePicks(store, { back() })
                     Screen.HISTORY -> HistoryScreen(state, { back() }, { store.go(Screen.HUB) })
                 }
-                if (state.screen == Screen.HOME && BuildConfig.DEMO_MODE) {
-                    Label("PLEOS CONNECT  ·  FRIENDS DEMO", 15, color = Muted,
-                        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 25.dp, bottom = 12.dp))
-                }
                 input?.let { request -> InputOverlay(request, services, state, { input = null; services.stopListening() }) { value -> request.save(value); input = null } }
                 editDay?.let { day -> ItineraryOverlay(day, state, services, { services.stopListening(); editDay = null }) { stops ->
                     store.update { current -> current.copy(days = current.days.mapIndexed { index, plan -> if (index == day) DayPlan(stops) else plan }) }; editDay = null
@@ -160,6 +164,8 @@ internal data class InputRequest(val title: String, val value: String, val sampl
                     }
                 }
             }
+            ConnectLightDock()
+            }
         }
     }
 }
@@ -171,11 +177,11 @@ internal data class InputRequest(val title: String, val value: String, val sampl
 }
 @Composable internal fun Action(text: String, onClick: () -> Unit, modifier: Modifier = Modifier,
     enabled: Boolean = true, secondary: Boolean = false) {
-    Button(onClick, modifier.heightIn(min = 82.dp), enabled = enabled, shape = RoundedCornerShape(24.dp),
+    Button(onClick, modifier.height(64.dp), enabled = enabled, shape = RoundedCornerShape(20.dp),
         colors = ButtonDefaults.buttonColors(containerColor = if (secondary) Color(0xFFEAE7FF) else Purple,
             contentColor = if (secondary) Purple else Color.White, disabledContainerColor = Color(0xFFE0E1E7), disabledContentColor = Color(0xFF9B9EA8)),
-        contentPadding = PaddingValues(horizontal = 32.dp, vertical = 17.dp)) {
-        Label(text, 28, FontWeight.Bold, if (enabled) if (secondary) Purple else Color.White else Color(0xFF9B9EA8))
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)) {
+        Label(text, 24, FontWeight.Bold, if (enabled) if (secondary) Purple else Color.White else Color(0xFF9B9EA8), maxLines = 1)
     }
 }
 @Composable internal fun Header(title: String, subtitle: String = "", back: () -> Unit, trailing: @Composable RowScope.() -> Unit = {}) {
@@ -195,7 +201,7 @@ internal data class InputRequest(val title: String, val value: String, val sampl
             Spacer(Modifier.width(23.dp)); Label("따로 타도, 함께 가는 여행", 25, color = Muted)
         }
         HomeTile("여행 시작하기", if (resume) "진행 중인 우리의 여행으로 돌아가요" else "우리의 다음 이야기는 어디로 갈까요?", R.drawable.home_journey,
-            Icons.Rounded.NorthEast, Modifier.fillMaxWidth().weight(1.1f).testTag("home-trip"), journey)
+            Icons.Rounded.NorthEast, Modifier.fillMaxWidth().weight(1.1f).testTag("home-trip"), journey, selected = true)
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             HomeTile("Pleos Picks 둘러보기", "함께 가고 싶은 곳을 발견해요", R.drawable.home_picks,
                 Icons.Rounded.AutoAwesome, Modifier.weight(1f).fillMaxHeight().testTag("home-picks"), picks)
@@ -205,8 +211,10 @@ internal data class InputRequest(val title: String, val value: String, val sampl
         Spacer(Modifier.height(12.dp))
     }
 }
-@Composable private fun HomeTile(title: String, subtitle: String, image: Int, icon: ImageVector, modifier: Modifier, click: () -> Unit) {
-    Box(modifier.clip(RoundedCornerShape(34.dp)).background(Color(0xFFE8EAE8)).clickable(onClick = click)) {
+@Composable private fun HomeTile(title: String, subtitle: String, image: Int, icon: ImageVector, modifier: Modifier, click: () -> Unit,
+    selected: Boolean = false) {
+    Box(modifier.border(4.dp, if (selected) Purple else Color.Transparent, RoundedCornerShape(36.dp))
+        .padding(4.dp).clip(RoundedCornerShape(32.dp)).background(Color(0xFFE8EAE8)).clickable(onClick = click)) {
         Image(painterResource(image), null, Modifier.fillMaxSize().alpha(.32f), contentScale = ContentScale.Crop)
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.White.copy(.05f), Color.White.copy(.8f)))))
         Row(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(38.dp), verticalAlignment = Alignment.Bottom) {
@@ -353,10 +361,34 @@ internal data class InputRequest(val title: String, val value: String, val sampl
         close, { services.stopListening(); save(value.trim()) })
 }
 @Composable internal fun GleoButton(listening: Boolean, click: () -> Unit) {
-    OutlinedButton(click, Modifier.heightIn(min = 76.dp).testTag("gleo"), shape = RoundedCornerShape(22.dp), border = BorderStroke(1.dp, Purple.copy(.25f))) {
-        Icon(Icons.Rounded.AutoAwesome, null, Modifier.size(29.dp), tint = Purple); Spacer(Modifier.width(12.dp))
-        Label(if (listening) "듣고 있어요…" else "Gleo AI로 입력", 26, FontWeight.Bold, Purple)
+    OutlinedButton(click, Modifier.height(56.dp).testTag("gleo"), shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, Purple.copy(.25f)), contentPadding = PaddingValues(horizontal = 18.dp)) {
+        Icon(Icons.Rounded.AutoAwesome, null, Modifier.size(22.dp), tint = Purple); Spacer(Modifier.width(8.dp))
+        Label(if (listening) "듣고 있어요…" else "Gleo AI", 22, FontWeight.Bold, Purple, maxLines = 1)
     }
+}
+
+@Composable private fun DemoViewerBar(state: TravelState, select: (String) -> Unit) {
+    Row(Modifier.fillMaxWidth().background(Color(0xFFF3F4F7)).padding(horizontal = 20.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Label("DEMO 화면", 16, FontWeight.Bold, Muted, maxLines = 1)
+        state.members.forEach { member ->
+            val on = state.viewerId == member.id
+            Surface(onClick = { select(member.id) }, shape = RoundedCornerShape(16.dp),
+                color = if (on) Purple else Color.White, modifier = Modifier.testTag("viewer-${member.id}")) {
+                Label(member.name, 18, FontWeight.Bold, if (on) Color.White else Ink,
+                    Modifier.padding(horizontal = 16.dp, vertical = 8.dp), maxLines = 1)
+            }
+        }
+        Spacer(Modifier.weight(1f))
+        Label("Connect-S-17  ·  1:2 DV", 15, color = Muted, maxLines = 1)
+    }
+}
+
+@Composable private fun ConnectLightDock() {
+    Image(painterResource(R.drawable.connect_light_dock), "Connect light dock",
+        Modifier.fillMaxWidth().height(76.dp).background(Color(0xFFF7F8FA)).testTag("connect-dock"),
+        contentScale = ContentScale.FillWidth)
 }
 @Composable internal fun textStyle() = androidx.compose.ui.text.TextStyle(fontFamily = Asta, fontWeight = FontWeight.SemiBold, fontSize = 29.sp, color = Ink)
 

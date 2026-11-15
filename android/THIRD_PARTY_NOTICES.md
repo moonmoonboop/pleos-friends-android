@@ -12,9 +12,10 @@ Official reference: [Pleos Connect emulator setup](https://document.pleos.ai/doc
 
 * Festival, food and beach sample images: [festival](https://images.unsplash.com/photo-1492684223066-81342ee5ff30), [food](https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38), [beach](https://images.unsplash.com/photo-1507525428034-b723cf961d3e), under the Unsplash license above. These are illustrative images, not business photographs.
 * Korea country geometry: [Natural Earth](https://www.naturalearthdata.com/about/terms-of-use/), public domain. Demo road geometry was computed from OpenStreetMap data using [OSRM](https://project-osrm.org/docs/v26.4.0/http). Requests happen during asset preparation; the app does not contact the public routing server.
-* The café address and hours were checked against [Waveon’s official page](https://m.waveoncoffee.com/layout/info.html). The displayed rating, visit count, recommendations, distance, photographs and other sample venues remain fixtures.
+* **해운대 오션카페** and other Picks venues are demonstration fixtures. Rating, visit count, recommendations, distance and photographs are sample UI, not live business data.
 * Demo speech clips are synthetic speech produced locally for the supplied scenario, not recordings of real participants.
 * The small ellipse/H badges are an illustrative Hyundai-style UI mark, not a claim of partnership, certification or access to actual Hyundai analytics.
+* `connect_light_dock` is an illustrative Connect-S Light dock recreation for the signed demo chrome, not a system screenshot from a production vehicle.
 
 ## Detailed demonstration basemaps
 

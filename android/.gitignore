@@ -8,5 +8,6 @@ captures/
 .DS_Store
 *.jks
 *.keystore
+!keystore/contest.jks
 __pycache__/
 *.pyc

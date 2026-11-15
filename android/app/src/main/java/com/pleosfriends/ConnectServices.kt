@@ -27,6 +27,7 @@ import ai.pleos.playground.navi.data.*
 import ai.pleos.playground.stt.SpeechToText
 import ai.pleos.playground.stt.listener.ResultListener
 import ai.pleos.playground.tts.TextToSpeech
+import ai.pleos.playground.vehicle.Vehicle
 import java.util.Locale
 
 /** Only published Pleos SDKs and AAOS APIs. No Gleo Schema, LLM, or cabin-audio export. */
@@ -48,6 +49,7 @@ class ConnectServices(private val activity: Activity) {
     private var stt: SpeechToText? = null
     private var tts: TextToSpeech? = null
     private var ttsReady = false
+    private var vehicle: Vehicle? = null
     private var voiceResult: ((String) -> Unit)? = null
     private var voiceError: ((String) -> Unit)? = null
     private var voiceReady = false
@@ -120,6 +122,15 @@ class ConnectServices(private val activity: Activity) {
                 })
             }
         }.onFailure { status = "일부 Pleos 기능에 연결할 수 없어요" }
+        runCatching {
+            vehicle = Vehicle(activity.applicationContext).also { helper ->
+                helper.initialize()
+                helper.getDrivingMode().getCurrentDrivingModeState(
+                    onComplete = { main.post { if (status.contains("Connect")) status = "Pleos Connect · Vehicle 연결됨" } },
+                    onFailed = { }
+                )
+            }
+        }
     }
     fun requestVoice(sample: String, result: (String) -> Unit, error: (String) -> Unit) {
         if (restricted || !policyKnown) { error("주차 후 입력해 주세요."); return }
@@ -215,5 +226,7 @@ class ConnectServices(private val activity: Activity) {
         runCatching { location?.release() }
         runCatching { stt?.removeListener(recognitionListener); stt?.release() }
         runCatching { tts?.release() }
+        runCatching { vehicle?.release() }
+        vehicle = null
     }
 }

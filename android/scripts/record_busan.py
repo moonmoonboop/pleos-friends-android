@@ -2,7 +2,7 @@
 """Build, install, and record the five-scene Busan journey on a parked Pleos emulator.
 
 No SMS is sent. Scenario data lives in ../scenarios/busan-roadtrip.json.
-Only the demo APK exposes the fixture and simulated vehicle-view switches.
+Only the demo APK exposes the fixture, the DEMO viewer strip (예빈/도현/서윤), and simulated arrival events.
 """
 from __future__ import annotations
 import argparse
